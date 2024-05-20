@@ -1,24 +1,100 @@
 #include <iostream>
 #include <string>
 #include "server.h"
+#include "utils.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <cstring>
+#include <poll.h>
 
 int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
         std::cerr << "Usage: " << argv[0] << " <port> <directory>" << std::endl;
-        return 1;
+        return EXIT_SUCCESS;
     }
 
     int port = std::stoi(argv[1]);
     std::string directory = argv[2];
 
     Server server(port, directory);
-    if (!server.run())
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1)
     {
-        std::cerr << "Failed when running server." << std::endl;
+        std::cerr << "Failed to create socket." << std::endl;
         return EXIT_FAILURE;
     }
 
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(port);
+
+    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
+    {
+        std::cerr << "Failed to bind socket." << std::endl;
+        close(serverSocket);
+        return EXIT_FAILURE;
+    }
+
+    if (listen(serverSocket, 10) == -1)
+    {
+        std::cerr << "Failed to listen on socket." << std::endl;
+        close(serverSocket);
+        return EXIT_FAILURE;
+    }
+
+    pollfd ps;
+    ps.fd = serverSocket;
+    ps.events = POLLIN;
+    ps.revents = 0;
+
+    pollfd psClient;
+    ps.events = POLLIN;
+    ps.revents = 0;
+
+    std::cout << "Server listening on port " << port << std::endl;
+    int ready;
+
+    while (true)
+    {
+        ready = poll(&ps, 1, 1000);
+        while (ready-- && ps.revents == POLLIN)
+        {
+            int clientSocket = accept(serverSocket, nullptr, nullptr);
+            if (clientSocket == -1)
+            {
+                std::cerr << "Failed with client accept" << std::endl;
+                continue;
+            }
+
+            psClient.fd = clientSocket;
+            server.handle(clientSocket);
+
+            long int start_time = getMilliseconds();
+            while ((getMilliseconds() - start_time) <= 2)
+            {
+                ready = poll(&psClient, 1, 10);
+                if (ready == -1)
+                {
+                    std::cerr << "Client poll error" << std::endl;
+                    break;
+                }
+
+                while (ready-- && psClient.revents == POLLIN)
+                {
+                    server.handle(clientSocket);
+                }
+            }
+            close(clientSocket);
+        }
+    }
+
+    close(serverSocket);
     return EXIT_SUCCESS;
 }

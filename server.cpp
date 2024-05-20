@@ -11,88 +11,10 @@
 
 Server::Server(int port, const std::string &directory) : port(port), directory(directory) {}
 
-bool Server::run()
-{
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1)
-    {
-        std::cerr << "Failed to create socket." << std::endl;
-        return false;
-    }
-
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(port);
-
-    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
-    {
-        std::cerr << "Failed to bind socket." << std::endl;
-        close(serverSocket);
-        return false;
-    }
-
-    if (listen(serverSocket, 10) == -1)
-    {
-        std::cerr << "Failed to listen on socket." << std::endl;
-        close(serverSocket);
-        return false;
-    }
-
-    pollfd ps;
-    ps.fd = serverSocket;
-    ps.events = POLLIN;
-    ps.revents = 0;
-
-    pollfd psClient;
-    ps.events = POLLIN;
-    ps.revents = 0;
-
-    std::cout << "Server listening on port " << port << std::endl;
-    int ready;
-
-    while (true)
-    {
-        ready = poll(&ps, 1, 1000);
-        while (ready-- && ps.revents == POLLIN)
-        {
-            int clientSocket = accept(serverSocket, nullptr, nullptr);
-            if (clientSocket == -1)
-            {
-                std::cerr << "Failed to accept client." << std::endl;
-                continue;
-            }
-
-            psClient.fd = clientSocket;
-            handleClient(clientSocket);
-
-            long int start_time = getMilliseconds();
-            while ((getMilliseconds() - start_time) <= 2)
-            {
-                ready = poll(&psClient, 1, 10);
-                if (ready == -1)
-                {
-                    std::cerr << "Client poll error" << std::endl;
-                    break;
-                }
-
-                while (ready-- && psClient.revents == POLLIN)
-                {
-                    handleClient(clientSocket);
-                }
-            }
-            close(clientSocket);
-        }
-    }
-
-    close(serverSocket);
-    return true;
-}
-
-void Server::handleClient(int clientSocket)
+void Server::handle(int clientSocket)
 {
     char buffer[4096];
-    int bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+    int bytesRead = recv(clientSocket, buffer, 4095, 0);
     if (bytesRead <= 0)
     {
         std::cerr << "Failed to read from client." << std::endl;

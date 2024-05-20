@@ -3,14 +3,11 @@
 class Server
 {
 public:
-    Server(int port, const std::string &directory);
-    bool run();
-
-private:
     int port;
     std::string directory;
+    Server(int port, const std::string &directory);
 
-    void handleClient(int clientSocket);
+    void handle(int clientSocket);
     std::string readFile(const std::string &path);
     std::string getHost(const std::string &request);
     std::string getContentType(const std::string &path);
