@@ -68,17 +68,26 @@ void Server::handleClient(int clientSocket)
     }
 
     buffer[bytesRead] = '\0';
-
     std::string request(buffer);
     std::string host = getHost(request);
 
-    std::istringstream requestStream(request);
-    std::string requestLine;
-    std::getline(requestStream, requestLine);
+    char methodBuff[16], pathBuff[256], protocolBuff[16];
+    if (sscanf(buffer, "%15s %255s %15s", methodBuff, pathBuff, protocolBuff) != 3)
+    {
+        std::cerr << "Invalid request format." << std::endl;
+        std::string response = createErrorResponse(400, "Bad Request");
+        send(clientSocket, response.c_str(), response.length(), 0);
+        return;
+    }
 
-    std::string method, path, protocol;
-    std::istringstream requestLineStream(requestLine);
-    requestLineStream >> method >> path >> protocol;
+    std::string method(methodBuff), path(pathBuff), protocol(protocolBuff);
+    if (startsWith(path, ".."))
+    {
+        std::cout << path << " " << directory << std::endl;
+        std::string response = createErrorResponse(403, "Forbidden");
+        send(clientSocket, response.c_str(), response.length(), 0);
+        return;
+    }
 
     if (method != "GET")
     {
@@ -87,7 +96,15 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    std::string fullPath = directory + "/" + host + (path == "/" ? "/index.html" : path);
+    if (path == "/")
+    {
+        std::string response = createMovedPermanently("http://" + host + ":" + std::to_string(port) + "/index.html");
+        std::cout << response << std::endl;
+        send(clientSocket, response.c_str(), response.length(), 0);
+        return;
+    }
+
+    std::string fullPath = directory + "/" + host + path;
     std::ifstream file(fullPath);
     if (!file)
     {
