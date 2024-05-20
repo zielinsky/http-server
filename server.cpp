@@ -99,8 +99,7 @@ std::string Server::getHost(const std::string &request)
         if (line.substr(0, 5) == "Host:")
         {
             std::string host = line.substr(6);
-            size_t colonPos = host.find(':');
-            return host.substr(0, colonPos);
+            return host.substr(0, host.find(':'));
         }
     }
     return "";
