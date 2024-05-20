@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -Wall -Wextra -std=gnu++20
 LDFLAGS =
-SOURCES = main.cpp http_utils.cpp server.cpp
+SOURCES = main.cpp utils.cpp server.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = http-server
 

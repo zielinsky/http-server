@@ -1,4 +1,4 @@
-#include "http_utils.h"
+#include "utils.h"
 #include <sstream>
 
 std::string createErrorResponse(int statusCode, const std::string &statusMessage)
@@ -13,14 +13,19 @@ std::string createErrorResponse(int statusCode, const std::string &statusMessage
     return response.str();
 }
 
-std::string createSuccessResponse(const std::string &content, const std::string &mimeType)
+std::string createSuccessResponse(const std::string &content, const std::string &contentType)
 {
     std::ostringstream response;
     response << "HTTP/1.1 200 OK\r\n";
-    response << "Content-Type: " << mimeType << "\r\n";
+    response << "Content-Type: " << contentType << "\r\n";
     response << "Content-Length: " << content.length() << "\r\n";
     response << "Connection: close\r\n";
     response << "\r\n";
     response << content;
     return response.str();
+}
+
+bool endsWith(const std::string &str, const std::string &suffix)
+{
+    return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }

@@ -1,5 +1,5 @@
 #include "server.h"
-#include "http_utils.h"
+#include "utils.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -87,12 +87,7 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    if (path == "/")
-    {
-        path = "/index.html";
-    }
-
-    std::string fullPath = directory + "/" + host + path;
+    std::string fullPath = directory + "/" + host + (path == "/" ? "/index.html" : path);
     std::ifstream file(fullPath);
     if (!file)
     {
@@ -102,34 +97,29 @@ void Server::handleClient(int clientSocket)
     }
 
     std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::string mimeType = getMimeType(fullPath);
+    std::string mimeType = getContentType(fullPath);
 
     std::string response = createSuccessResponse(fileContent, mimeType);
     send(clientSocket, response.c_str(), response.length(), 0);
 }
-std::string Server::getMimeType(const std::string &path)
+
+std::string Server::getContentType(const std::string &path)
 {
     if (endsWith(path, ".html"))
         return "text/html; charset=utf-8";
-    if (endsWith(path, ".txt"))
+    else if (endsWith(path, ".txt"))
         return "text/plain; charset=utf-8";
-    if (endsWith(path, ".css"))
+    else if (endsWith(path, ".css"))
         return "text/css";
-    if (endsWith(path, ".jpg"))
+    else if (endsWith(path, ".jpg"))
         return "image/jpeg";
-    if (endsWith(path, ".jpeg"))
+    else if (endsWith(path, ".jpeg"))
         return "image/jpeg";
-    if (endsWith(path, ".png"))
+    else if (endsWith(path, ".png"))
         return "image/png";
-    if (endsWith(path, ".pdf"))
+    else if (endsWith(path, ".pdf"))
         return "application/pdf";
     return "application/octet-stream";
-}
-
-bool Server::endsWith(const std::string &str, const std::string &suffix)
-{
-    return str.size() >= suffix.size() &&
-           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 std::string Server::getHost(const std::string &request)
@@ -140,11 +130,11 @@ std::string Server::getHost(const std::string &request)
     {
         if (line.substr(0, 5) == "Host:")
         {
-            std::string host = line.substr(6); // Skip "Host: "
+            std::string host = line.substr(6);
             size_t colonPos = host.find(':');
             if (colonPos != std::string::npos)
             {
-                host = host.substr(0, colonPos); // Remove port part
+                host = host.substr(0, colonPos);
             }
             return host;
         }
