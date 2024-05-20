@@ -4,7 +4,7 @@ class Server
 {
 public:
     Server(int port, const std::string &directory);
-    bool start();
+    bool run();
 
 private:
     int port;

@@ -14,9 +14,9 @@ int main(int argc, char *argv[])
     std::string directory = argv[2];
 
     Server server(port, directory);
-    if (!server.start())
+    if (!server.run())
     {
-        std::cerr << "Failed to start server." << std::endl;
+        std::cerr << "Failed when running server." << std::endl;
         return EXIT_FAILURE;
     }
 

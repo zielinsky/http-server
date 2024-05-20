@@ -7,10 +7,11 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cstring>
+#include <poll.h>
 
 Server::Server(int port, const std::string &directory) : port(port), directory(directory) {}
 
-bool Server::start()
+bool Server::run()
 {
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1)
@@ -38,19 +39,50 @@ bool Server::start()
         return false;
     }
 
+    pollfd ps;
+    ps.fd = serverSocket;
+    ps.events = POLLIN;
+    ps.revents = 0;
+
+    pollfd psClient;
+    ps.events = POLLIN;
+    ps.revents = 0;
+
     std::cout << "Server listening on port " << port << std::endl;
+    int ready;
 
     while (true)
     {
-        int clientSocket = accept(serverSocket, nullptr, nullptr);
-        if (clientSocket == -1)
+        ready = poll(&ps, 1, 1000);
+        if (ready && ps.revents == POLLIN)
         {
-            std::cerr << "Failed to accept client." << std::endl;
-            continue;
-        }
+            int clientSocket = accept(serverSocket, nullptr, nullptr);
+            if (clientSocket == -1)
+            {
+                std::cerr << "Failed to accept client." << std::endl;
+                continue;
+            }
 
-        handleClient(clientSocket);
-        close(clientSocket);
+            psClient.fd = clientSocket;
+            handleClient(clientSocket);
+
+            long int start_time = getMilliseconds();
+            while ((getMilliseconds() - start_time) <= 2)
+            {
+                ready = poll(&psClient, 1, 10);
+                if (ready == -1)
+                {
+                    std::cerr << "Client poll error" << std::endl;
+                    break;
+                }
+
+                if (ready && psClient.revents == POLLIN)
+                {
+                    handleClient(clientSocket);
+                }
+            }
+            close(clientSocket);
+        }
     }
 
     close(serverSocket);
@@ -113,19 +145,18 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::string mimeType = getContentType(fullPath);
-
-    std::string response = createSuccessResponse(fileContent, mimeType);
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::string contentType = getContentType(fullPath);
+    std::string response = createSuccessResponse(content, contentType);
     send(clientSocket, response.c_str(), response.length(), 0);
 }
 
 std::string Server::getContentType(const std::string &path)
 {
-    if (endsWith(path, ".html"))
-        return "text/html; charset=utf-8";
-    else if (endsWith(path, ".txt"))
+    if (endsWith(path, ".txt"))
         return "text/plain; charset=utf-8";
+    else if (endsWith(path, ".html"))
+        return "text/html; charset=utf-8";
     else if (endsWith(path, ".css"))
         return "text/css";
     else if (endsWith(path, ".jpg"))

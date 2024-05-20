@@ -1,14 +1,15 @@
 #include "utils.h"
+#include <time.h>
 #include <sstream>
 
 std::string createErrorResponse(int statusCode, const std::string &statusMessage)
 {
     std::ostringstream response;
-    response << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
-    response << "Content-Type: text/html; charset=utf-8\r\n";
-    response << "Content-Length: " << statusMessage.length() << "\r\n";
-    response << "Connection: close\r\n";
-    response << "\r\n";
+    response << "HTTP/1.1 " << statusCode << " " << statusMessage << "\n";
+    response << "Content-Type: text/html; charset=utf-8\n";
+    response << "Content-Length: " << statusMessage.length() << "\n";
+    response << "Connection: close\n";
+    response << "\n";
     response << statusMessage;
     return response.str();
 }
@@ -16,11 +17,11 @@ std::string createErrorResponse(int statusCode, const std::string &statusMessage
 std::string createSuccessResponse(const std::string &content, const std::string &contentType)
 {
     std::ostringstream response;
-    response << "HTTP/1.1 200 OK\r\n";
-    response << "Content-Type: " << contentType << "\r\n";
-    response << "Content-Length: " << content.length() << "\r\n";
-    response << "Connection: close\r\n";
-    response << "\r\n";
+    response << "HTTP/1.1 200 OK\n";
+    response << "Content-Type: " << contentType << "\n";
+    response << "Content-Length: " << content.length() << "\n";
+    response << "Connection: close\n";
+    response << "\n";
     response << content;
     return response.str();
 }
@@ -28,8 +29,8 @@ std::string createSuccessResponse(const std::string &content, const std::string 
 std::string createMovedPermanently(const std::string &locationUrl)
 {
     std::ostringstream response;
-    response << "HTTP/1.1 301 Moved Permanently\r\n";
-    response << "Location: " << locationUrl << "\r\n";
+    response << "HTTP/1.1 301 Moved Permanently\n";
+    response << "Location: " << locationUrl << "\n";
     return response.str();
 }
 
@@ -41,4 +42,9 @@ bool endsWith(const std::string &str, const std::string &suffix)
 bool startsWith(const std::string &str, const std::string &prefix)
 {
     return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
+}
+
+long int getMilliseconds()
+{
+    return time(nullptr);
 }

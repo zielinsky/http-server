@@ -5,3 +5,4 @@ std::string createSuccessResponse(const std::string &content, const std::string 
 std::string createMovedPermanently(const std::string &locationUrl);
 bool endsWith(const std::string &str, const std::string &suffix);
 bool startsWith(const std::string &str, const std::string &prefix);
+long int getMilliseconds();
