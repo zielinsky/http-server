@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1)
     {
-        std::cerr << "Failed to create socket." << std::endl;
+        std::cerr << "Create server socket error" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -37,14 +37,14 @@ int main(int argc, char *argv[])
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
     {
-        std::cerr << "Failed to bind socket." << std::endl;
+        std::cerr << "Bind server socket error" << std::endl;
         close(serverSocket);
         return EXIT_FAILURE;
     }
 
     if (listen(serverSocket, 10) == -1)
     {
-        std::cerr << "Failed to listen on socket." << std::endl;
+        std::cerr << "Listen server socket error" << std::endl;
         close(serverSocket);
         return EXIT_FAILURE;
     }
@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
     ps.events = POLLIN;
     ps.revents = 0;
 
-    std::cout << "Server listening on port " << port << std::endl;
     int ready;
 
     while (true)
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
             int clientSocket = accept(serverSocket, nullptr, nullptr);
             if (clientSocket == -1)
             {
-                std::cerr << "Failed with client accept" << std::endl;
+                std::cerr << "Client accept error" << std::endl;
                 continue;
             }
 

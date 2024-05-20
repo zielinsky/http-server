@@ -59,8 +59,7 @@ void Server::handle(int clientSocket)
         return;
     }
 
-    std::string path = directory + "/" + host + relativePath;
-    std::ifstream file(path);
+    std::ifstream file(directory + "/" + host + relativePath);
     if (!file)
     {
         std::string response = createErrorResponse(404, "Not Found");
@@ -69,7 +68,7 @@ void Server::handle(int clientSocket)
     }
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::string contentType = getContentType(path);
+    std::string contentType = getContentType(relativePath);
     std::string response = createSuccessResponse(content, contentType);
     send(clientSocket, response.c_str(), response.length(), 0);
 }
@@ -82,9 +81,7 @@ std::string Server::getContentType(const std::string &path)
         return "text/html; charset=utf-8";
     else if (endsWith(path, ".css"))
         return "text/css";
-    else if (endsWith(path, ".jpg"))
-        return "image/jpeg";
-    else if (endsWith(path, ".jpeg"))
+    else if (endsWith(path, ".jpg") || endsWith(path, ".jpeg"))
         return "image/jpeg";
     else if (endsWith(path, ".png"))
         return "image/png";
