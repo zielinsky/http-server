@@ -1,3 +1,5 @@
+// 330261 - Patryk Zieliński
+
 #include "server.h"
 #include "utils.h"
 #include <iostream>
@@ -11,10 +13,12 @@
 
 Server::Server(int port, const std::string &directory) : port(port), directory(directory) {}
 
+#define MAX_BUFFER_SIZE 4096
+
 void Server::handle(int clientSocket)
 {
-    char buffer[4096];
-    int bytesRead = recv(clientSocket, buffer, 4095, 0);
+    char buffer[MAX_BUFFER_SIZE];
+    int bytesRead = recv(clientSocket, buffer, MAX_BUFFER_SIZE - 1, 0);
     if (bytesRead <= 0)
     {
         std::cerr << "Failed to read from client." << std::endl;
@@ -23,7 +27,18 @@ void Server::handle(int clientSocket)
 
     buffer[bytesRead] = '\0';
     std::string request(buffer);
-    std::string host = getHost(request);
+    std::string host = "";
+
+    std::istringstream stream(request);
+    std::string line;
+    while (std::getline(stream, line))
+    {
+        if (line.substr(0, 5) == "Host:")
+        {
+            std::string hostLoc = line.substr(6);
+            host = hostLoc.substr(0, hostLoc.find(':'));
+        }
+    }
 
     char methodBuff[16], pathBuff[256], protocolBuff[16];
     if (sscanf(buffer, "%15s %255s %15s", methodBuff, pathBuff, protocolBuff) != 3)
@@ -88,19 +103,4 @@ std::string Server::getContentType(const std::string &path)
     else if (endsWith(path, ".pdf"))
         return "application/pdf";
     return "application/octet-stream";
-}
-
-std::string Server::getHost(const std::string &request)
-{
-    std::istringstream stream(request);
-    std::string line;
-    while (std::getline(stream, line))
-    {
-        if (line.substr(0, 5) == "Host:")
-        {
-            std::string host = line.substr(6);
-            return host.substr(0, host.find(':'));
-        }
-    }
-    return "";
 }

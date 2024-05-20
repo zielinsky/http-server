@@ -1,3 +1,5 @@
+// 330261 - Patryk Zieliński
+
 #include <iostream>
 #include <string>
 #include "server.h"

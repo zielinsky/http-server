@@ -1,3 +1,5 @@
+// 330261 - Patryk Zieliński
+
 #include "utils.h"
 #include <time.h>
 #include <sstream>
