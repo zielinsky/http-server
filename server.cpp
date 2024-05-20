@@ -54,7 +54,7 @@ bool Server::run()
     while (true)
     {
         ready = poll(&ps, 1, 1000);
-        if (ready && ps.revents == POLLIN)
+        while (ready-- && ps.revents == POLLIN)
         {
             int clientSocket = accept(serverSocket, nullptr, nullptr);
             if (clientSocket == -1)
@@ -76,7 +76,7 @@ bool Server::run()
                     break;
                 }
 
-                if (ready && psClient.revents == POLLIN)
+                while (ready-- && psClient.revents == POLLIN)
                 {
                     handleClient(clientSocket);
                 }
@@ -112,14 +112,7 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    std::string method(methodBuff), path(pathBuff), protocol(protocolBuff);
-    if (startsWith(path, ".."))
-    {
-        std::cout << path << " " << directory << std::endl;
-        std::string response = createErrorResponse(403, "Forbidden");
-        send(clientSocket, response.c_str(), response.length(), 0);
-        return;
-    }
+    std::string method(methodBuff), relativePath(pathBuff), protocol(protocolBuff);
 
     if (method != "GET")
     {
@@ -128,7 +121,15 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    if (path == "/")
+    if (startsWith(relativePath, ".."))
+    {
+        std::cout << relativePath << " " << directory << std::endl;
+        std::string response = createErrorResponse(403, "Forbidden");
+        send(clientSocket, response.c_str(), response.length(), 0);
+        return;
+    }
+
+    if (relativePath == "/")
     {
         std::string response = createMovedPermanently("http://" + host + ":" + std::to_string(port) + "/index.html");
         std::cout << response << std::endl;
@@ -136,8 +137,8 @@ void Server::handleClient(int clientSocket)
         return;
     }
 
-    std::string fullPath = directory + "/" + host + path;
-    std::ifstream file(fullPath);
+    std::string path = directory + "/" + host + relativePath;
+    std::ifstream file(path);
     if (!file)
     {
         std::string response = createErrorResponse(404, "Not Found");
@@ -146,7 +147,7 @@ void Server::handleClient(int clientSocket)
     }
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::string contentType = getContentType(fullPath);
+    std::string contentType = getContentType(path);
     std::string response = createSuccessResponse(content, contentType);
     send(clientSocket, response.c_str(), response.length(), 0);
 }
@@ -180,11 +181,7 @@ std::string Server::getHost(const std::string &request)
         {
             std::string host = line.substr(6);
             size_t colonPos = host.find(':');
-            if (colonPos != std::string::npos)
-            {
-                host = host.substr(0, colonPos);
-            }
-            return host;
+            return host.substr(0, colonPos);
         }
     }
     return "";
