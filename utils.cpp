@@ -1,7 +1,7 @@
 // 330261 - Patryk Zieliński
 
 #include "utils.h"
-#include <time.h>
+#include <sys/time.h>
 #include <sstream>
 
 std::string createErrorResponse(int statusCode, const std::string &statusMessage)
@@ -24,6 +24,8 @@ std::string createSuccessResponse(const std::string &content, const std::string 
     response << "Content-Length: " << content.length() << "\n";
     if (closeConnection)
         response << "Connection: close\n";
+    else
+        response << "Connection: keep-alive\n";
     response << "\n";
     response << content;
     return response.str();
@@ -49,5 +51,7 @@ bool startsWith(const std::string &str, const std::string &prefix)
 
 long int getMilliseconds()
 {
-    return time(nullptr);
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return tp.tv_sec * 1000 + tp.tv_usec / 1000;
 }

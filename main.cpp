@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     while (true)
     {
-        ready = poll(&ps, 1, 1000);
+        ready = poll(&ps, 1, 50);
         if (ready && ps.revents == POLLIN)
         {
             int clientSocket = accept(serverSocket, nullptr, nullptr);
@@ -74,29 +74,29 @@ int main(int argc, char *argv[])
             }
 
             psClient.fd = clientSocket;
-            server.handle(clientSocket);
+            std::cout << clientSocket << std::endl;
 
             long int start_time = getMilliseconds();
-            while ((getMilliseconds() - start_time) <= 2)
+            long int acc_time = getMilliseconds();
+            while ((ready = poll(&psClient, 1, 10)) || (acc_time - start_time) <= 250)
             {
-                ready = poll(&psClient, 1, 10);
+                acc_time = getMilliseconds();
                 if (ready == -1)
                 {
                     std::cerr << "Client poll error" << std::endl;
                     break;
                 }
 
-                if (ready == 1 && psClient.revents == POLLIN)
+                if (ready && psClient.revents == POLLIN)
                 {
+                    start_time = getMilliseconds();
                     server.handle(clientSocket);
                 }
-                std::cout << (getMilliseconds() - start_time) << " " << ready << std::endl;
             }
-            
-            std::string response = createSuccessResponse("", "", "true");
+
+            std::string response = createSuccessResponse("", "text/html; charset=utf-8", true);
             send(clientSocket, response.c_str(), response.length(), 0);
             close(clientSocket);
-            psClient.revents = 0;
         }
     }
 
