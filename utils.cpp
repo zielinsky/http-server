@@ -16,13 +16,14 @@ std::string createErrorResponse(int statusCode, const std::string &statusMessage
     return response.str();
 }
 
-std::string createSuccessResponse(const std::string &content, const std::string &contentType)
+std::string createSuccessResponse(const std::string &content, const std::string &contentType, bool closeConnection)
 {
     std::ostringstream response;
     response << "HTTP/1.1 200 OK\n";
     response << "Content-Type: " << contentType << "\n";
     response << "Content-Length: " << content.length() << "\n";
-    response << "Connection: close\n";
+    if (closeConnection)
+        response << "Connection: close\n";
     response << "\n";
     response << content;
     return response.str();

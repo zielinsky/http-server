@@ -31,12 +31,17 @@ void Server::handle(int clientSocket)
 
     std::istringstream stream(request);
     std::string line;
+    bool closeConnection = false;
     while (std::getline(stream, line))
     {
         if (line.substr(0, 5) == "Host:")
         {
             std::string hostLoc = line.substr(6);
             host = hostLoc.substr(0, hostLoc.find(':'));
+        }
+        else if (line.substr(0, 16) == "Connection: close")
+        {
+            closeConnection = true;
         }
     }
 
@@ -60,7 +65,6 @@ void Server::handle(int clientSocket)
 
     if (startsWith(relativePath, ".."))
     {
-        std::cout << relativePath << " " << directory << std::endl;
         std::string response = createErrorResponse(403, "Forbidden");
         send(clientSocket, response.c_str(), response.length(), 0);
         return;
@@ -84,7 +88,7 @@ void Server::handle(int clientSocket)
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     std::string contentType = getContentType(relativePath);
-    std::string response = createSuccessResponse(content, contentType);
+    std::string response = createSuccessResponse(content, contentType, closeConnection);
     send(clientSocket, response.c_str(), response.length(), 0);
 }
 

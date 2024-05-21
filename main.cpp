@@ -74,24 +74,24 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            psClient.fd = clientSocket;
+            // psClient.fd = clientSocket;
+
+            // long int start_time = getMilliseconds();
+            // while ((getMilliseconds() - start_time) <= 2)
+            // {
+            //     ready = poll(&psClient, 1, 10);
+            //     if (ready == -1)
+            //     {
+            //         std::cerr << "Client poll error" << std::endl;
+            //         break;
+            //     }
+
+            //     while (ready-- && psClient.revents == POLLIN)
+            //     {
+            //         server.handle(clientSocket);
+            //     }
+            // }
             server.handle(clientSocket);
-
-            long int start_time = getMilliseconds();
-            while ((getMilliseconds() - start_time) <= 2)
-            {
-                ready = poll(&psClient, 1, 10);
-                if (ready == -1)
-                {
-                    std::cerr << "Client poll error" << std::endl;
-                    break;
-                }
-
-                while (ready-- && psClient.revents == POLLIN)
-                {
-                    server.handle(clientSocket);
-                }
-            }
             close(clientSocket);
         }
     }
