@@ -1,5 +1,4 @@
 // 330261 - Patryk Zieliński
-
 #include <iostream>
 #include <string>
 #include "server.h"
@@ -57,15 +56,15 @@ int main(int argc, char *argv[])
     ps.revents = 0;
 
     pollfd psClient;
-    ps.events = POLLIN;
-    ps.revents = 0;
+    psClient.events = POLLIN;
+    psClient.revents = 0;
 
     int ready;
 
     while (true)
     {
         ready = poll(&ps, 1, 1000);
-        while (ready-- && ps.revents == POLLIN)
+        if (ready && ps.revents == POLLIN)
         {
             int clientSocket = accept(serverSocket, nullptr, nullptr);
             if (clientSocket == -1)
@@ -74,25 +73,30 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            // psClient.fd = clientSocket;
-
-            // long int start_time = getMilliseconds();
-            // while ((getMilliseconds() - start_time) <= 2)
-            // {
-            //     ready = poll(&psClient, 1, 10);
-            //     if (ready == -1)
-            //     {
-            //         std::cerr << "Client poll error" << std::endl;
-            //         break;
-            //     }
-
-            //     while (ready-- && psClient.revents == POLLIN)
-            //     {
-            //         server.handle(clientSocket);
-            //     }
-            // }
+            psClient.fd = clientSocket;
             server.handle(clientSocket);
+
+            long int start_time = getMilliseconds();
+            while ((getMilliseconds() - start_time) <= 2)
+            {
+                ready = poll(&psClient, 1, 10);
+                if (ready == -1)
+                {
+                    std::cerr << "Client poll error" << std::endl;
+                    break;
+                }
+
+                if (ready == 1 && psClient.revents == POLLIN)
+                {
+                    server.handle(clientSocket);
+                }
+                std::cout << (getMilliseconds() - start_time) << " " << ready << std::endl;
+            }
+            
+            std::string response = createSuccessResponse("", "", "true");
+            send(clientSocket, response.c_str(), response.length(), 0);
             close(clientSocket);
+            psClient.revents = 0;
         }
     }
 
