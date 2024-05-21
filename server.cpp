@@ -15,14 +15,14 @@ Server::Server(int port, const std::string &directory) : port(port), directory(d
 
 #define MAX_BUFFER_SIZE 4096
 
-void Server::handle(int clientSocket)
+bool Server::handle(int clientSocket)
 {
     char buffer[MAX_BUFFER_SIZE];
     int bytesRead = recv(clientSocket, buffer, MAX_BUFFER_SIZE - 1, 0);
     if (bytesRead <= 0)
     {
         std::cerr << "Failed to read from client." << std::endl;
-        return;
+        return true;
     }
 
     buffer[bytesRead] = '\0';
@@ -51,7 +51,7 @@ void Server::handle(int clientSocket)
         std::cerr << "Invalid request format." << std::endl;
         std::string response = createErrorResponse(400, "Bad Request");
         send(clientSocket, response.c_str(), response.length(), 0);
-        return;
+        return closeConnection;
     }
 
     std::string method(methodBuff), relativePath(pathBuff), protocol(protocolBuff);
@@ -60,14 +60,14 @@ void Server::handle(int clientSocket)
     {
         std::string response = createErrorResponse(501, "Not Implemented");
         send(clientSocket, response.c_str(), response.length(), 0);
-        return;
+        return closeConnection;
     }
 
-    if (startsWith(relativePath, ".."))
+    if (startsWith(relativePath, "..") || startsWith(relativePath, "/.."))
     {
         std::string response = createErrorResponse(403, "Forbidden");
         send(clientSocket, response.c_str(), response.length(), 0);
-        return;
+        return closeConnection;
     }
 
     if (relativePath == "/")
@@ -75,7 +75,7 @@ void Server::handle(int clientSocket)
         std::string response = createMovedPermanently("http://" + host + ":" + std::to_string(port) + "/index.html");
         std::cout << response << std::endl;
         send(clientSocket, response.c_str(), response.length(), 0);
-        return;
+        return closeConnection;
     }
 
     std::ifstream file(directory + "/" + host + relativePath);
@@ -83,13 +83,14 @@ void Server::handle(int clientSocket)
     {
         std::string response = createErrorResponse(404, "Not Found");
         send(clientSocket, response.c_str(), response.length(), 0);
-        return;
+        return closeConnection;
     }
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     std::string contentType = getContentType(relativePath);
     std::string response = createSuccessResponse(content, contentType, closeConnection);
     send(clientSocket, response.c_str(), response.length(), 0);
+    return closeConnection;
 }
 
 std::string Server::getContentType(const std::string &path)

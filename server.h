@@ -9,7 +9,7 @@ public:
     std::string directory;
     Server(int port, const std::string &directory);
 
-    void handle(int clientSocket);
+    bool handle(int clientSocket);
     std::string readFile(const std::string &path);
     std::string getContentType(const std::string &path);
 };

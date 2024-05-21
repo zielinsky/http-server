@@ -90,7 +90,8 @@ int main(int argc, char *argv[])
                 if (ready && psClient.revents == POLLIN)
                 {
                     start_time = getMilliseconds();
-                    server.handle(clientSocket);
+                    if (server.handle(clientSocket))
+                        break;
                 }
             }
 
